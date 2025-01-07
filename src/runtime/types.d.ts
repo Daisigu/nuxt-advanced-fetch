@@ -7,21 +7,24 @@ export interface IApiHandlerTypes {
   onRequest: FetchContext
   onRequestError: FetchContext & { error: Error }
   onResponse: FetchContext
-  onResponseError: FetchContext & { response: FetchResponse<any> }
+  onResponseError: FetchContext & { response: FetchResponse<unknown> }
 }
 
 export type IApiHandlers = {
-  [K in keyof IApiHandlerTypes]: Array<(context: IApiHandlerTypes[K]) => void>;
+  [K in keyof IApiHandlerTypes]: Array<(context: IApiHandlerTypes[K]) => void>
 }
 
 export interface IApiPlugin {
-  addHandler<K extends keyof IApiHandlers>(type: K, handler: (context: IApiHandlerTypes[K]) => void): void
-  removeHandler<K extends keyof IApiHandlers>(type: K, handler: (context: IApiHandlerTypes[K]) => void): void
-  get<T>(url: string, params?: IFetchOptions['params'], options?: IFetchOptions): Promise<T>
-  post<T>(url: string, body?: IFetchOptions['body'], options?: IFetchOptions): Promise<T>
-  put<T>(url: string, body?: IFetchOptions['body'], options?: IFetchOptions): Promise<T>
-  patch<T>(url: string, body?: IFetchOptions['body'], options?: IFetchOptions): Promise<T>
-  delete<T>(url: string, body?: IFetchOptions['body'], options?: IFetchOptions): Promise<T>
+  <T>(url: string, options?: IFetchOptions): Promise<T>
+  addHandler<K extends keyof IApiHandlers>(
+    type: K,
+    handler: (context: IApiHandlerTypes[K]) => void
+  ): void
+  removeHandler<K extends keyof IApiHandlers>(
+    type: K,
+    handler: (context: IApiHandlerTypes[K]) => void
+  ): void
+  create(...args: Parameters<typeof $fetch['create']>): IApiPlugin
 }
 
 declare module '#app' {
