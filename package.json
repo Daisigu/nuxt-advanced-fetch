@@ -1,8 +1,8 @@
 {
-  "name": "my-module",
+  "name": "nuxt-advanced-fetch",
   "version": "1.0.0",
   "description": "My new Nuxt module",
-  "repository": "your-org/my-module",
+  "repository": "your-org/nuxt-advanced-fetch",
   "license": "MIT",
   "type": "module",
   "exports": {
