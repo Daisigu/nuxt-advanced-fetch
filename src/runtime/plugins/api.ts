@@ -1,4 +1,5 @@
 import type { IApiHandlers, IApiHandlerTypes, IApiPlugin, IFetchOptions } from '../types'
+import { defineNuxtPlugin } from '#app'
 
 export default defineNuxtPlugin({
   name: 'api',
@@ -11,7 +12,7 @@ export default defineNuxtPlugin({
       onResponseError: [],
     }
 
-    function callMaybeArray<T extends (arg: any) => void>(
+    function callMaybeArray<T extends (arg: never) => void>(
       maybeArray: T | T[] | undefined,
       arg: Parameters<T>[0],
     ): void {
