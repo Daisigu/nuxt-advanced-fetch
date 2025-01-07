@@ -1,6 +1,20 @@
 # Changelog
 
 
+## v1.1.1
+
+[compare changes](https://github.com/your-org/nuxt-advanced-fetch/compare/v1.1.0...v1.1.1)
+
+### 💅 Refactors
+
+- Add defineNuxtPlugin import ([9f6a37f](https://github.com/your-org/nuxt-advanced-fetch/commit/9f6a37f))
+- Playground examples ([c710ce8](https://github.com/your-org/nuxt-advanced-fetch/commit/c710ce8))
+- Playground compatibilityDate ([3d27918](https://github.com/your-org/nuxt-advanced-fetch/commit/3d27918))
+
+### ❤️ Contributors
+
+- Богдан Гоголь <bogd2288@gmail.com>
+
 ## v1.1.0
 
 
