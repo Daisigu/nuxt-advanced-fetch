@@ -1,4 +1,4 @@
-import { createResolver, defineNuxtModule, addPlugin, addImportsDir } from '@nuxt/kit'
+import { createResolver, defineNuxtModule, addPlugin } from '@nuxt/kit'
 
 export default defineNuxtModule({
   meta: {
@@ -12,13 +12,8 @@ export default defineNuxtModule({
 
     const runtimeDir = resolve('./runtime')
 
-    addImportsDir([
-      resolve(runtimeDir, 'composables'),
-    ])
-
     addPlugin(resolve(runtimeDir, 'plugins/api'))
 
     nuxt.options.alias['#api-types'] = resolve(runtimeDir, 'types.d.ts')
-    nuxt.options.alias['#api'] = resolve(runtimeDir, 'index.ts')
   },
 })
