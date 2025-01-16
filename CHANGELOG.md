@@ -1,6 +1,19 @@
 # Changelog
 
 
+## v1.1.2
+
+[compare changes](https://github.com/Daisigu/nuxt-advanced-fetch/compare/v1.1.1...v1.1.2)
+
+### 💅 Refactors
+
+- Update github ci ([4031cc6](https://github.com/Daisigu/nuxt-advanced-fetch/commit/4031cc6))
+- Update module description and keywords ([fae4155](https://github.com/Daisigu/nuxt-advanced-fetch/commit/fae4155))
+
+### ❤️ Contributors
+
+- Богдан Гоголь <bogd2288@gmail.com>
+
 ## v1.1.1
 
 [compare changes](https://github.com/your-org/nuxt-advanced-fetch/compare/v1.1.0...v1.1.1)
