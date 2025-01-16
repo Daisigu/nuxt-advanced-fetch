@@ -1,10 +1,22 @@
 {
   "name": "nuxt-advanced-fetch",
   "version": "1.1.1",
-  "description": "My new Nuxt module",
-  "repository": "your-org/nuxt-advanced-fetch",
+  "description": "Enhances Nuxt 3 $fetch with lifecycle handlers, dynamic management, and custom fetch instances for modular API requests.",
+  "repository": "https://github.com/Daisigu/nuxt-advanced-fetch",
   "license": "MIT",
   "type": "module",
+  "keywords": [
+    "nuxt3",
+    "fetch",
+    "api",
+    "plugin",
+    "handlers",
+    "custom-fetch",
+    "modular-api",
+    "nuxt-plugin",
+    "lifecycle",
+    "nuxt-api"
+  ],
   "exports": {
     ".": {
       "types": "./dist/types.d.ts",
