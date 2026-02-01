@@ -1,6 +1,45 @@
 # Changelog
 
 
+## v2.0.0
+
+[compare changes](https://github.com/Daisigu/nuxt-advanced-fetch/compare/v1.1.1...v2.0.0)
+
+### 🚀 Enhancements
+
+- Add name in defineOptions ([505702d](https://github.com/Daisigu/nuxt-advanced-fetch/commit/505702d))
+- Add compatibility support for Nuxt 3.12.0 and above ([1fab4b9](https://github.com/Daisigu/nuxt-advanced-fetch/commit/1fab4b9))
+
+### 🩹 Fixes
+
+- Linter ([9548865](https://github.com/Daisigu/nuxt-advanced-fetch/commit/9548865))
+
+### 💅 Refactors
+
+- Update github ci ([4031cc6](https://github.com/Daisigu/nuxt-advanced-fetch/commit/4031cc6))
+- Update module description and keywords ([fae4155](https://github.com/Daisigu/nuxt-advanced-fetch/commit/fae4155))
+- JSDoc for types, rename types, remeove I/T prefixes ([aeecdca](https://github.com/Daisigu/nuxt-advanced-fetch/commit/aeecdca))
+- Add options with order to  handlers, lift utils from setup ([524ddf3](https://github.com/Daisigu/nuxt-advanced-fetch/commit/524ddf3))
+
+### 📖 Documentation
+
+- Update README.md ([03d92a4](https://github.com/Daisigu/nuxt-advanced-fetch/commit/03d92a4))
+
+### 🏡 Chore
+
+- Update module version to match package.json ([bd0dd4b](https://github.com/Daisigu/nuxt-advanced-fetch/commit/bd0dd4b))
+- Update keywords ([2d77bcc](https://github.com/Daisigu/nuxt-advanced-fetch/commit/2d77bcc))
+- Bump version to 1.1.2 in package.json ([5a36407](https://github.com/Daisigu/nuxt-advanced-fetch/commit/5a36407))
+
+### ✅ Tests
+
+- Add unit tests for $api handler order and options, update fixture components ([165be32](https://github.com/Daisigu/nuxt-advanced-fetch/commit/165be32))
+
+### ❤️ Contributors
+
+- B.gogol <bogd2288@gmail.com>
+- Богдан Гоголь <bogd2288@gmail.com>
+
 ## v1.1.1
 
 [compare changes](https://github.com/your-org/nuxt-advanced-fetch/compare/v1.1.0...v1.1.1)
