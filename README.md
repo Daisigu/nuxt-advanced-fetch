@@ -1,140 +1,191 @@
-# API Plugin for Nuxt 3 🚀
+# nuxt-advanced-fetch
 
-This plugin enhances the `$fetch` instance in Nuxt 3 by introducing powerful handler mechanisms and customizable fetch instances. Whether you need global request/response handlers or isolated configurations for specific use cases, this plugin has you covered.
+[![npm version](https://img.shields.io/npm/v/nuxt-advanced-fetch.svg)](https://www.npmjs.com/package/nuxt-advanced-fetch)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![GitHub](https://img.shields.io/github/stars/Daisigu/nuxt-advanced-fetch?style=social)](https://github.com/Daisigu/nuxt-advanced-fetch)
 
----
+**A Nuxt module (Nuxt 3 & 4) that extends `$fetch` with global interceptors, multiple lifecycle handlers per stage, and isolated API client instances.**
 
-## Key Features ✨
-
-1. **Multiple Handlers Support**:
-   - Add multiple handlers for different fetch lifecycle stages: `onRequest`, `onRequestError`, `onResponse`, `onResponseError`.
-   - Handlers can be added and removed dynamically.
-
-2. **Instance Creation**:
-   - Easily create new fetch instances with their own set of handlers.
-   - Each instance can have isolated behavior and configurations.
-
-3. **Enhanced Debugging**:
-   - Centralize and manage request/response handlers for better control and observability.
+Native Nuxt `$fetch` allows only one handler per lifecycle hook and no shared interceptors across calls. This module adds a `$api` client with pluggable global handlers, ordered execution, and the ability to create separate fetch instances (e.g. per backend) with their own handler sets—without touching the global `$fetch`.
 
 ---
 
-## Installation 📦
+## Features
 
-1. Add the plugin to your project:
-   ```bash
-   npm install nuxt-advanced-fetch
-
-   pnpm add nuxt-advanced-fetch
-
-   yarn add nuxt-advanced-fetch
-   ```
-
-2. Register the plugin in your Nuxt application:
-   ```javascript
-   // nuxt.config.ts
-   export default defineNuxtConfig({
-     modules: ['nuxt-advanced-fetch']
-   })
-   ```
+- **Multiple handlers per lifecycle** — Register several handlers for `onRequest`, `onRequestError`, `onResponse`, and `onResponseError`; they run in a defined order (globals first, then per-call).
+- **Ordered execution** — Control handler order via an `order` option (lower runs first) for both global and per-call handlers.
+- **Isolated instances** — Create dedicated API clients with `$api.create({ baseURL, ... })`; each has its own handlers and does not inherit global ones.
+- **Type-safe** — Full TypeScript typings for handlers, options, and the `$api` client (e.g. `ApiClient`, `ApiFetchOptions`, `HandlerContextTypes`).
+- **Nuxt 3 & 4** — Built as a Nuxt module; works with Nuxt 3 and Nuxt 4. Injects `$api` via `useNuxtApp()` and uses Nitro/ofetch under the hood.
 
 ---
 
-## Usage 🛠️
+## Installation
 
-### Accessing the Enhanced API
-The enhanced `$fetch` instance is available in useNuxtApp():
+```bash
+npm install nuxt-advanced-fetch
+```
 
-```typescript
+```bash
+yarn add nuxt-advanced-fetch
+```
 
+```bash
+pnpm add nuxt-advanced-fetch
+```
 
+Add the module to your Nuxt config:
+
+```ts
+// nuxt.config.ts
+export default defineNuxtConfig({
+  modules: ['nuxt-advanced-fetch'],
+})
+```
+
+---
+
+## Quick Start
+
+Use the injected `$api` client (same call signature as `$fetch`) and attach global handlers:
+
+```ts
 const { $api } = useNuxtApp()
 
+// Optional: global request interceptor
+$api.addHandler('onRequest', (ctx) => {
+  ctx.options.headers.set('X-Request-Id', crypto.randomUUID())
+})
 
-const data = await $api('/api/resource', {
+// Optional: global error handling
+$api.addHandler('onResponseError', ({ response }) => {
+  console.error('API error', response?.status, response?._data)
+})
+
+// Use like $fetch
+const data = await $api<{ id: number; title: string }>('/api/todos/1', {
   method: 'GET',
-  onRequest(context) {
-    console.log('Request started:', context)
+})
+```
+
+Per-call hooks still work and run after global handlers (you can pass a function or an object with `handler` and `order`):
+
+```ts
+const item = await $api('/api/items/1', {
+  onResponse: (ctx) => {
+    console.log('Fetched', ctx.response?._data)
   },
-  onResponse(context) {
-    console.log('Response received:', context)
+})
+```
+
+---
+
+## API Reference
+
+### Client: `$api` (type `ApiClient`)
+
+Injected via `useNuxtApp().$api`. Callable like `$fetch`; accepts the same request options plus extended hook types.
+
+| Method / signature | Description |
+|--------------------|-------------|
+| `$api<T>(url: string, options?: ApiFetchOptions): Promise<T>` | Performs a request. Runs global handlers first, then per-call hooks. Returns parsed response body. |
+| `addHandler<K>(type: K, handler: (ctx: HandlerContextTypes[K]) => void, options?: GlobalHandlerOptions): void` | Registers a global handler for `onRequest`, `onRequestError`, `onResponse`, or `onResponseError`. Use `options.order` (default `0`); lower runs first. |
+| `removeHandler<K>(type: K, handler: (ctx: HandlerContextTypes[K]) => void): void` | Unregisters a global handler by reference. |
+| `create(defaultOptions?, customGlobalOptions?): ApiClient` | Returns a new API client (e.g. with `baseURL`) with its own handler list. Does not inherit global handlers from `$api`. |
+
+### Types
+
+| Type | Description |
+|------|-------------|
+| `ApiClient` | Type of `$api` and instances returned by `$api.create()`. |
+| `ApiFetchOptions` | Request options for `$api()`; extends Nitro fetch options. Hook fields (`onRequest`, etc.) accept a function or `LocalHandlerOptions` (or array of either). |
+| `LocalHandlerOptions<K>` | `{ handler: (ctx) => void, order?: number }` for per-call hooks. Lower `order` runs first within the same phase. |
+| `GlobalHandlerOptions` | `{ order?: number }` for `addHandler()`. |
+| `HandlerContextTypes` | Maps hook name to context type (`onRequest` → `FetchContext`, `onResponseError` → context with `response`, etc.). |
+
+### Handler execution order
+
+1. All **global** handlers for that hook, sorted by `order` (ascending).
+2. All **per-call** handlers for that hook (from `options.onRequest` etc.), sorted by `order` (ascending).
+
+---
+
+## Examples
+
+### Multiple API backends with isolated handlers
+
+Create one client per backend; each has its own interceptors (e.g. auth, logging) and base URL:
+
+```ts
+// plugins/api-clients.ts
+export default defineNuxtPlugin(() => {
+  const { $api } = useNuxtApp()
+
+  const todosApi = $api.create({
+    baseURL: 'https://api.example.com/todos',
+  })
+  todosApi.addHandler('onRequest', (ctx) => {
+    ctx.options.headers.set('X-Client', 'todos-app')
+  })
+
+  const usersApi = $api.create({
+    baseURL: 'https://api.example.com/users',
+  })
+  usersApi.addHandler('onResponseError', ({ response }) => {
+    if (response?.status === 401) {
+      // e.g. redirect to login
+    }
+  })
+
+  return {
+    provide: {
+      todosApi,
+      usersApi,
+    },
   }
 })
 ```
 
-### Adding Handlers
-You can add handlers globally or per-instance:
+```ts
+// Usage in a component
+const { todosApi, usersApi } = useNuxtApp()
+const tasks = await todosApi<Todo[]>('/')
+const profile = await usersApi<User>('/me')
+```
 
-```typescript
-$api.addHandler('onRequest', (context) => {
-  console.log('Global onRequest handler:', context)
-})
+### Ordered global handlers (auth then logging)
 
-$api.addHandler('onResponseError', (error) => {
-  console.error('Global response error:', error)
+Control the order of global handlers with the `order` option:
+
+```ts
+$api.addHandler('onRequest', (ctx) => {
+  ctx.options.headers.set('Authorization', `Bearer ${getToken()}`)
+}, { order: 0 })
+
+$api.addHandler('onRequest', (ctx) => {
+  console.log('[API]', ctx.request, ctx.options)
+}, { order: 10 })
+```
+
+Per-call handlers can use the same shape:
+
+```ts
+await $api('/api/data', {
+  onRequest: [
+    { handler: (ctx) => { /* first */ }, order: 0 },
+    { handler: (ctx) => { /* second */ }, order: 5 },
+  ],
 })
 ```
 
-### Removing Handlers
+---
 
-```typescript
-const handler = (context) => console.log('Removing this handler', context)
-$api.addHandler('onRequest', handler)
-$api.removeHandler('onRequest', handler)
-```
+## Repository
 
-### Creating Custom Instances
-Each custom instance has its own set of handlers:
-
-```typescript
-const customApi = $api.create({ baseURL: 'https://custom-api.com' })
-
-customApi.addHandler('onResponse', (context) => {
-  context.options.headers.append('Authorization', `Bearer ${token}`)
-})
-
-await customApi('/custom-endpoint')
-```
+[GitHub — Daisigu/nuxt-advanced-fetch](https://github.com/Daisigu/nuxt-advanced-fetch)
 
 ---
 
-## API Reference 📖
+## License
 
-### Methods
-
-#### `$api(url: string, options?: IFetchOptions): Promise<any>`
-- Enhanced fetch method with lifecycle handlers.
-
-#### `addHandler(type: keyof IApiHandlers, handler: (context: IApiHandlerTypes[K]) => void): void`
-- Adds a new handler for the specified lifecycle stage.
-
-#### `removeHandler(type: keyof IApiHandlers, handler: (context: IApiHandlerTypes[K]) => void): void`
-- Removes an existing handler for the specified lifecycle stage.
-
-#### `create(options?: IFetchOptions): IApiPlugin`
-- Creates a new fetch instance with isolated handlers and configurations.
-
----
-
-## Why Use This Plugin? 🤔
-
-### Problem 1: Lack of Multiple Handlers
-Native `$fetch` in Nuxt lacks the ability to manage multiple handlers for a single lifecycle stage. This plugin resolves that by allowing you to:
-- Register multiple handlers for `onRequest`, `onRequestError`, `onResponse`, and `onResponseError`.
-- Dynamically add or remove handlers as needed.
-
-### Problem 2: Limited Customization for Instances
-Creating multiple fetch instances with isolated configurations is not straightforward. With this plugin:
-- You can create multiple instances, each with its own handlers and configurations.
-- This is especially useful for modular or microservice-based applications.
-
----
-
-## Contributing 🤝
-Contributions are welcome! Please submit an issue or a pull request on GitHub if you have suggestions or improvements.
-
----
-
-## License 📜
-This plugin is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
-
+[MIT](./LICENSE)
