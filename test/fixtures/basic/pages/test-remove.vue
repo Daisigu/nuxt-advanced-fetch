@@ -1,5 +1,7 @@
 <template>
-  <div data-testid="handler-log">{{ JSON.stringify(log) }}</div>
+  <div data-testid="handler-log">
+    {{ JSON.stringify(log) }}
+  </div>
 </template>
 
 <script setup>
