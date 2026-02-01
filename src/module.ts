@@ -1,10 +1,11 @@
 import { createResolver, defineNuxtModule, addPlugin } from '@nuxt/kit'
+import { version } from '../package.json'
 
 export default defineNuxtModule({
   meta: {
     name: 'nuxt-advanced-fetch',
     configKey: 'nuxtAdvancedFetch',
-    version: '1.0.0',
+    version: version,
   },
 
   setup(_options, nuxt) {
