@@ -6,6 +6,9 @@ export default defineNuxtModule({
     name: 'nuxt-advanced-fetch',
     configKey: 'nuxtAdvancedFetch',
     version: version,
+    compatibility: {
+      nuxt: '>=3.12.0',
+    },
   },
 
   setup(_options, nuxt) {
