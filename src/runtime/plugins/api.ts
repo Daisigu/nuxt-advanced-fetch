@@ -1,87 +1,122 @@
-import type { IApiHandlers, IApiHandlerTypes, IApiPlugin, IFetchOptions } from '../types'
+import type {
+  ApiHandlers,
+  HandlerContextTypes,
+  ApiClient,
+  ApiFetchOptions,
+  GlobalHandlerOptions,
+  LocalHandlerOption,
+  GlobalHandlerEntry,
+  LocalHandlerEntry,
+} from '../types'
 import { defineNuxtPlugin } from '#app'
 
+const DEFAULT_ORDER = 0
+
+function normalizeLocal<K extends keyof HandlerContextTypes>(
+  option: LocalHandlerOption<K> | LocalHandlerOption<K>[] | undefined,
+): LocalHandlerEntry<K>[] {
+  if (option == null) return []
+  const list = Array.isArray(option) ? option : [option]
+  return list.map((item): LocalHandlerEntry<K> => {
+    if (typeof item === 'function') {
+      return { handler: item, order: DEFAULT_ORDER }
+    }
+    return { handler: item.handler, order: item.order ?? DEFAULT_ORDER }
+  })
+}
+
+function runHandlers<K extends keyof HandlerContextTypes>(
+  context: HandlerContextTypes[K],
+  globalEntries: GlobalHandlerEntry<K>[],
+  localEntries: LocalHandlerEntry<K>[],
+): void {
+  const sortedGlobal = [...globalEntries].sort((a, b) => a.order - b.order)
+  const sortedLocal = [...localEntries].sort((a, b) => a.order - b.order)
+  for (const entry of sortedGlobal) entry.handler(context)
+  for (const entry of sortedLocal) entry.handler(context)
+}
+
+const globalHandlers: ApiHandlers = {
+  onRequest: [],
+  onRequestError: [],
+  onResponse: [],
+  onResponseError: [],
+}
+
+function enhanceInstance(
+  instance: typeof $fetch,
+  handlers: ApiHandlers = globalHandlers,
+): ApiClient {
+  return Object.assign(
+    <T>(url: string, options?: ApiFetchOptions): Promise<T> => {
+      return instance<T>(url, {
+        ...options,
+        onRequest: (context) => {
+          runHandlers(
+            context as HandlerContextTypes['onRequest'],
+            handlers.onRequest,
+            normalizeLocal(options?.onRequest),
+          )
+        },
+        onRequestError: (error) => {
+          runHandlers(
+            error as HandlerContextTypes['onRequestError'],
+            handlers.onRequestError,
+            normalizeLocal(options?.onRequestError),
+          )
+        },
+        onResponse: (context) => {
+          runHandlers(
+            context as HandlerContextTypes['onResponse'],
+            handlers.onResponse,
+            normalizeLocal(options?.onResponse),
+          )
+        },
+        onResponseError: (error) => {
+          runHandlers(
+            error as HandlerContextTypes['onResponseError'],
+            handlers.onResponseError,
+            normalizeLocal(options?.onResponseError),
+          )
+        },
+      })
+    },
+    {
+      addHandler<K extends keyof ApiHandlers>(
+        type: K,
+        handler: (context: HandlerContextTypes[K]) => void,
+        options?: GlobalHandlerOptions,
+      ): void {
+        handlers[type].push({
+          handler,
+          order: options?.order ?? DEFAULT_ORDER,
+        })
+      },
+      removeHandler<K extends keyof ApiHandlers>(
+        type: K,
+        handler: (context: HandlerContextTypes[K]) => void,
+      ): void {
+        const index = handlers[type].findIndex(
+          entry => entry.handler === handler,
+        )
+        if (index !== -1) handlers[type].splice(index, 1)
+      },
+      create(...args: Parameters<typeof instance.create>): ApiClient {
+        const newInstance = instance.create(...args)
+        return enhanceInstance(newInstance, {
+          onRequest: [],
+          onRequestError: [],
+          onResponse: [],
+          onResponseError: [],
+        })
+      },
+    },
+  )
+}
 export default defineNuxtPlugin({
   name: 'api',
   enforce: 'pre',
   setup() {
-    const globalHandlers: IApiHandlers = {
-      onRequest: [],
-      onRequestError: [],
-      onResponse: [],
-      onResponseError: [],
-    }
-
-    function callMaybeArray<T extends (arg: never) => void>(
-      maybeArray: T | T[] | undefined,
-      arg: Parameters<T>[0],
-    ): void {
-      if (Array.isArray(maybeArray)) {
-        maybeArray.forEach(fn => fn(arg))
-      }
-      else if (typeof maybeArray === 'function') {
-        maybeArray(arg)
-      }
-    }
-
-    function enhanceInstance(instance: typeof $fetch, handlers: IApiHandlers = globalHandlers): IApiPlugin {
-      return Object.assign(
-        <T>(url: string, options?: IFetchOptions): Promise<T> => {
-          return instance<T>(url, {
-            ...options,
-            onRequest: (context) => {
-              handlers.onRequest.forEach(handler =>
-                handler(context as IApiHandlerTypes['onRequest']),
-              )
-              callMaybeArray(options?.onRequest, context)
-            },
-            onRequestError: (error) => {
-              handlers.onRequestError.forEach(handler =>
-                handler(error as IApiHandlerTypes['onRequestError']),
-              )
-              callMaybeArray(options?.onRequestError, error)
-            },
-            onResponse: (context) => {
-              handlers.onResponse.forEach(handler =>
-                handler(context as IApiHandlerTypes['onResponse']),
-              )
-              callMaybeArray(options?.onResponse, context)
-            },
-            onResponseError: (error) => {
-              handlers.onResponseError.forEach(handler =>
-                handler(error as IApiHandlerTypes['onResponseError']),
-              )
-              callMaybeArray(options?.onResponseError, error)
-            },
-          })
-        },
-        {
-          addHandler<K extends keyof IApiHandlers>(
-            type: K,
-            handler: (context: IApiHandlerTypes[K]) => void,
-          ): void {
-            handlers[type].push(handler)
-          },
-          removeHandler<K extends keyof IApiHandlers>(
-            type: K,
-            handler: (context: IApiHandlerTypes[K]) => void,
-          ): void {
-            const index = handlers[type].indexOf(handler)
-            if (index !== -1) handlers[type].splice(index, 1)
-          },
-          create(...args: Parameters<typeof instance.create>): IApiPlugin {
-            const newInstance = instance.create(...args)
-            return enhanceInstance(newInstance, {
-              onRequest: [],
-              onRequestError: [],
-              onResponse: [],
-              onResponseError: [],
-            })
-          },
-        },
-      )
-    }
-
     return {
       provide: {
         api: enhanceInstance($fetch),
